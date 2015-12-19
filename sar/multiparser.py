@@ -14,7 +14,7 @@ files where multiple files are merged into one huge file.
 
 '''
 
-import parser as sarparse
+import sar.parser as sarparse
 from sar import PATTERN_MULTISPLIT
 import mmap
 import os

@@ -52,7 +52,7 @@ class Parser(object):
         return None
 
     def load_file(self):
-        print '''
+        '''
         Loads SAR format logfile in ASCII format (sarXX).
             :return: ``True`` if loading and parsing of file went fine, \
             ``False`` if it failed (at any point)
@@ -105,7 +105,6 @@ class Parser(object):
         Returns parsed sar info
             :return: ``Dictionary``-style list of SAR data
         '''
-        print "get_sar_info"
 
         try:
             test = self._sarinfo["cpu"]
@@ -135,7 +134,6 @@ class Parser(object):
                 the type of info they contain (SAR file sections) without
                 parsing what is exactly what at this point
         '''
-        print "_split_file"
         # Filename passed checks through __init__
         if ((self.__filename and os.access(self.__filename, os.R_OK))
                 or data != ''):
@@ -249,7 +247,6 @@ class Parser(object):
             :return: ``Dictionary``-style info (but still non-parsed) \
                 from SAR file, split into sections we want to check
         '''
-        print "_parse_file"
         cpu_usage = ''
         mem_usage = ''
         swp_usage = ''
@@ -438,7 +435,6 @@ class Parser(object):
             return False
 
         return_dict = {}
-        print pattern
         pattern_re = re.compile(pattern)
 
         for part_line in info_part.split("\n"):
@@ -511,9 +507,8 @@ class Parser(object):
                         fields = self.__iface_fields
                         pairs = FIELD_PAIRS_IFACE
 
-                    # print pairs
                     for sectionname in pairs.iterkeys():
-                        # print sectionname
+
                         value = elems[fields[pairs[sectionname]]]
 
                         if sectionname == 'membuffer' or \
