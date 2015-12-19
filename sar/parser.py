@@ -6,10 +6,11 @@
    Parses SAR ASCII output only, not binary files!
 '''
 
-from sar import PART_CPU, PART_MEM, PART_SWP, PART_IO, \
+from __init__ import PART_CPU, PART_MEM, PART_SWP, PART_IO,PART_IFACE, \
     PATTERN_CPU, PATTERN_MEM, PATTERN_SWP, PATTERN_IO, PATTERN_RESTART, \
+    PATTERN_IFACE,\
     FIELDS_CPU, FIELD_PAIRS_CPU, FIELDS_MEM, FIELD_PAIRS_MEM, FIELDS_SWP, \
-    FIELD_PAIRS_SWP, FIELDS_IO, FIELD_PAIRS_IO
+    FIELD_PAIRS_SWP, FIELDS_IO, FIELD_PAIRS_IO,FIELDS_IFACE,FIELD_PAIRS_IFACE
 import mmap
 import os
 import re
@@ -46,10 +47,12 @@ class Parser(object):
         self.__io_fields = None
         '''I/O usage indexes'''
 
+        self.__iface_fields = None
+
         return None
 
     def load_file(self):
-        '''
+        print '''
         Loads SAR format logfile in ASCII format (sarXX).
             :return: ``True`` if loading and parsing of file went fine, \
             ``False`` if it failed (at any point)
@@ -57,11 +60,12 @@ class Parser(object):
 
         # We first split file into pieces
         searchunks = self._split_file()
+        # print len(searchunks)
 
         if (searchunks):
 
             # And then we parse pieces into meaningful data
-            cpu_usage, mem_usage, swp_usage, io_usage = \
+            cpu_usage, mem_usage, swp_usage, io_usage, iface_usage = \
                 self._parse_file(searchunks)
 
             if (cpu_usage is False):
@@ -71,12 +75,14 @@ class Parser(object):
                 "cpu": cpu_usage,
                 "mem": mem_usage,
                 "swap": swp_usage,
-                "io": io_usage
+                "io": io_usage,
+                "iface":iface_usage
             }
             del(cpu_usage)
             del(mem_usage)
             del(swp_usage)
             del(io_usage)
+            del(iface_usage)
 
             return True
 
@@ -99,6 +105,7 @@ class Parser(object):
         Returns parsed sar info
             :return: ``Dictionary``-style list of SAR data
         '''
+        print "get_sar_info"
 
         try:
             test = self._sarinfo["cpu"]
@@ -128,7 +135,7 @@ class Parser(object):
                 the type of info they contain (SAR file sections) without
                 parsing what is exactly what at this point
         '''
-
+        print "_split_file"
         # Filename passed checks through __init__
         if ((self.__filename and os.access(self.__filename, os.R_OK))
                 or data != ''):
@@ -242,10 +249,12 @@ class Parser(object):
             :return: ``Dictionary``-style info (but still non-parsed) \
                 from SAR file, split into sections we want to check
         '''
+        print "_parse_file"
         cpu_usage = ''
         mem_usage = ''
         swp_usage = ''
         io_usage = ''
+        iface_usage = ''
 
         # If sar_parts is a list
         if (type(sar_parts) is ListType):
@@ -255,6 +264,7 @@ class Parser(object):
             mem_pattern = re.compile(PATTERN_MEM)
             swp_pattern = re.compile(PATTERN_SWP)
             io_pattern = re.compile(PATTERN_IO)
+            iface_pattern =  re.compile(PATTERN_IFACE)
             restart_pattern = re.compile(PATTERN_RESTART)
 
             ''' !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! '''
@@ -329,21 +339,39 @@ class Parser(object):
                     self.__restart_times.append(pieces[0])
                     del(pieces)
 
+                if (iface_pattern.search(part)):
+                    if (iface_usage == ''):
+                        iface_usage = part
+                        try:
+                            first_line = part.split("\n")[0]
+                        except IndexError:
+                            first_line = part
+
+                        self.__iface_fields = \
+                            self.__find_column(FIELDS_IFACE, first_line)
+
+                    else:
+                        iface_usage += "\n" + part
+
+
             del(sar_parts)
 
             # Now we have parts pulled out and combined, do further
             # processing.
             cpu_output = self.__split_info(cpu_usage, PART_CPU)
+            
             mem_output = self.__split_info(mem_usage, PART_MEM)
             swp_output = self.__split_info(swp_usage, PART_SWP)
             io_output = self.__split_info(io_usage, PART_IO)
+            iface_output = self.__split_info(iface_usage,PART_IFACE) 
 
             del(cpu_usage)
             del(mem_usage)
             del(swp_usage)
             del(io_usage)
+            del(iface_usage)
 
-            return (cpu_output, mem_output, swp_output, io_output)
+            return (cpu_output, mem_output, swp_output, io_output,iface_output)
 
         return (False, False, False)
 
@@ -403,12 +431,14 @@ class Parser(object):
             pattern = PATTERN_SWP
         elif (part_type == PART_IO):
             pattern = PATTERN_IO
+        elif(part_type == PART_IFACE):
+            pattern = PATTERN_IFACE
 
         if (pattern == ''):
             return False
 
         return_dict = {}
-
+        print pattern
         pattern_re = re.compile(pattern)
 
         for part_line in info_part.split("\n"):
@@ -477,9 +507,13 @@ class Parser(object):
                     elif part_type == PART_IO:
                         fields = self.__io_fields
                         pairs = FIELD_PAIRS_IO
+                    elif part_type == PART_IFACE:
+                        fields = self.__iface_fields
+                        pairs = FIELD_PAIRS_IFACE
 
+                    # print pairs
                     for sectionname in pairs.iterkeys():
-
+                        # print sectionname
                         value = elems[fields[pairs[sectionname]]]
 
                         if sectionname == 'membuffer' or \
@@ -493,6 +527,18 @@ class Parser(object):
                             value = float(value)
 
                         if part_type == PART_CPU:
+                            cpuid = elems[(1 if is_24hr is True else 2)]
+                            try:
+                                blah = return_dict[full_time][cpuid]
+                                del(blah)
+                            except KeyError:
+                                return_dict[full_time][cpuid] = {}
+                            return_dict[full_time][cpuid][sectionname] = \
+                                value
+                        else:
+                            return_dict[full_time][sectionname] = value
+
+                        if part_type == PART_IFACE:
                             cpuid = elems[(1 if is_24hr is True else 2)]
                             try:
                                 blah = return_dict[full_time][cpuid]

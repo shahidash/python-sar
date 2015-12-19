@@ -13,6 +13,9 @@ PART_SWP = 2
 """I/O usage part of SAR file"""
 PART_IO = 3
 
+"""IFACE usage part of SAR file"""
+PART_IFACE = 4
+
 """CPU regexp pattern for detecting SAR section header"""
 PATTERN_CPU = ".*CPU.*(usr|user).*nice.*sys.*"
 
@@ -71,6 +74,23 @@ FIELD_PAIRS_IO = {
 
 }
 
+"""IFACE pattern for detecting the IFACE section"""
+#10:18:01 AM     IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s
+PATTERN_IFACE = ".*IFACE.*rxpck\/s.*txpck\/s.*rxkB\/s.*txkB\/s.*rxcmp\/s.*txcmp\/s.*rxmcst\/s.*"
+
+"""Regexp terms for finding fields in SAR parts for IFACE"""
+FIELDS_IFACE = [
+    'rxpck\/s', 'txpck\/s','rxkB\/s','txkB\/s','rxcmp/s','txcmp\/s','rxmcst\/s'
+]
+
+"""Pair regexp terms with field names in IFACE output dictionary"""
+FIELD_PAIRS_IFACE = {
+
+    "rxpcks":FIELDS_IFACE[0], "txpcks":FIELDS_IFACE[1], 'rxkbs':FIELDS_IFACE[2],
+    'txkbs':FIELDS_IFACE[3], 'rxcmps':FIELDS_IFACE[4], 'txcmps':FIELDS_IFACE[5],
+    'rxmcsts':FIELDS_IFACE[6]
+}
+
 """Restart time regexp pattern for detecting SAR restart notices"""
 PATTERN_RESTART = ".*LINUX\ RESTART.*"
 
@@ -83,5 +103,5 @@ PATTERN_DATE = "[0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9]"
 __all__ = [
     "PART_CPU", "PART_MEM", "PART_SWP", "PART_IO",
     "PATTERN_CPU", "PATTERN_MEM", "PATTERN_SWP", "PATTERN_IO",
-    "PATTERN_RESTART", "PATTERN_MULTISPLIT", "PATTERN_DATE"
+    "PATTERN_RESTART", "PATTERN_MULTISPLIT", "PATTERN_DATE","PATTERN_IFACE"
 ]
