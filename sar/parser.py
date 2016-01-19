@@ -509,7 +509,11 @@ class Parser(object):
 
                     for sectionname in pairs.iterkeys():
 
-                        value = elems[fields[pairs[sectionname]]]
+                        try :
+                            value = elems[fields[pairs[sectionname]]]
+                        except Exception as e:
+                            if sectionname == 'idle' and len(elems) < 12:
+                                value = elems[-1]
 
                         if sectionname == 'membuffer' or \
                                 sectionname == 'memcache' or \
